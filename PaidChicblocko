@@ -1,0 +1,239 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Nebula Premium",
+   Icon = 0,
+   LoadingTitle = "Loading..",
+   LoadingSubtitle = "by Nebula scripters",
+   ShowText = "Rayfield",
+   Theme = "Default",
+   ToggleUIKeybind = "K",
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false,
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil,
+      FileName = "Big Hub"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "noinvitelink",
+      RememberJoins = true
+   },
+   KeySystem = true,
+   KeySettings = {
+      Title = "Chicblocko Free Key System",
+      Subtitle = "Free Chicblocko",
+      Note = "Your free key is: 2124267",
+      FileName = "Key",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"2124267"}
+   }
+})
+
+local CombatTab = Window:CreateTab("Combat💢", nil) -- Title, Image
+
+local aimlockEnabled = false
+local aimlockConnection
+
+CombatTab:CreateToggle({
+   Name = "Aimlock",
+   CurrentValue = false,
+   Callback = function(v)
+      aimlockEnabled = v
+      if aimlockEnabled then
+         local Players = game:GetService("Players")
+         local LocalPlayer = Players.LocalPlayer
+         local Camera = workspace.CurrentCamera
+
+         local function getClosestToCursor()
+            local closestPlayer = nil
+            local shortestDistance = math.huge
+            for _, player in pairs(Players:GetPlayers()) do
+               if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                  local pos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+                  if onScreen then
+                     local mousePos = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+                     local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                     if dist < shortestDistance then
+                        shortestDistance = dist
+                        closestPlayer = player
+                     end
+                  end
+               end
+            end
+            return closestPlayer
+         end
+
+         aimlockConnection = game:GetService("RunService").RenderStepped:Connect(function()
+            if aimlockEnabled then
+               local target = getClosestToCursor()
+               if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                  Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.HumanoidRootPart.Position)
+               end
+            end
+         end)
+      else
+         if aimlockConnection then
+            aimlockConnection:Disconnect()
+            aimlockConnection = nil
+         end
+      end
+   end,
+})
+
+local espEnabled = false
+
+CombatTab:CreateToggle({
+   Name = "ESP",
+   CurrentValue = false,
+   Callback = function(v)
+      espEnabled = v
+      local Players = game:GetService("Players")
+
+      local function setupESP(character, player)
+         if character:FindFirstChild("ESP_Highlight") then
+            character.ESP_Highlight:Destroy()
+         end
+         if espEnabled then
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "ESP_Highlight"
+            highlight.Adornee = character
+            highlight.FillColor = Color3.fromRGB(0, 255, 0)
+            highlight.OutlineColor = Color3.fromRGB(0, 150, 0)
+            highlight.Parent = character
+
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "NameTag"
+            billboard.Size = UDim2.new(0, 100, 0, 30)
+            billboard.Adornee = character:WaitForChild("Head")
+            billboard.AlwaysOnTop = true
+            billboard.Parent = character
+
+            local text = Instance.new("TextLabel")
+            text.Size = UDim2.new(1, 0, 1, 0)
+            text.BackgroundTransparency = 1
+            text.TextColor3 = Color3.new(1, 1, 1)
+            text.TextStrokeTransparency = 0
+            text.Font = Enum.Font.SourceSansBold
+            text.TextScaled = true
+            text.Text = player.Name
+            text.Parent = billboard
+         end
+      end
+
+      local function onCharacterAdded(character, player)
+         if espEnabled then
+            setupESP(character, player)
+         else
+            if character:FindFirstChild("ESP_Highlight") then
+               character.ESP_Highlight:Destroy()
+            end
+            if character:FindFirstChild("NameTag") then
+               character.NameTag:Destroy()
+            end
+         end
+      end
+
+      for _, player in ipairs(Players:GetPlayers()) do
+         player.CharacterAdded:Connect(function(character)
+            onCharacterAdded(character, player)
+         end)
+         if player.Character then
+            onCharacterAdded(player.Character, player)
+         end
+      end
+
+      Players.PlayerAdded:Connect(function(player)
+         player.CharacterAdded:Connect(function(character)
+            onCharacterAdded(character, player)
+         end)
+      end)
+   end,
+})
+
+CombatTab:CreateButton({
+   Name = "Allow jump",
+   Callback = function()
+      local UserInputService = game:GetService("UserInputService")
+      local player = game:GetService("Players").LocalPlayer
+      UserInputService.JumpRequest:Connect(function()
+         if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+            player.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+         end
+      end)
+   end,
+})
+
+CombatTab:CreateSlider({
+   Name = "Jump Power",
+   Range = {0, 100},
+   Increment = 1,
+   Suffix = "Power",
+   CurrentValue = 16,
+   Flag = "Slider2",
+   Callback = function(Value)
+      game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+   end,
+})
+
+local MiscTab = Window:CreateTab("Misc⚙️", nil) -- Title, Image
+
+MiscTab:CreateButton({
+   Name = "Instant proximity prompts",
+   Callback = function()
+      local function makeInstant(prompt)
+         if prompt:IsA("ProximityPrompt") then
+            prompt.HoldDuration = 0
+         end
+      end
+      for _, obj in ipairs(workspace:GetDescendants()) do
+         makeInstant(obj)
+      end
+      workspace.DescendantAdded:Connect(makeInstant)
+   end,
+})
+
+local Button = MiscTab:CreateButton({
+   Name = "Iy",
+   Callback = function()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+   end,
+})
+
+local TpTab = Window:CreateTab("Teleports🛸", nil) -- Title, Image
+
+TpTab:CreateButton({
+   Name = "Tp to apt",
+   Callback = function()
+      local player = game:GetService("Players").LocalPlayer
+      local char = player.Character or player.CharacterAdded:Wait()
+      local hrp = char:WaitForChild("HumanoidRootPart")
+      hrp.CFrame = CFrame.new(-122, 3, -663)
+   end,
+})
+
+TpTab:CreateButton({
+   Name = "Tp cookers",
+   Callback = function()
+      local player = game:GetService("Players").LocalPlayer
+      local char = player.Character or player.CharacterAdded:Wait()
+      local hrp = char:WaitForChild("HumanoidRootPart")
+      hrp.CFrame = CFrame.new(-331, 3, -430)
+   end,
+})
+
+TpTab:CreateButton({
+   Name = "Tp mm",
+   Callback = function()
+      local player = game:GetService("Players").LocalPlayer
+      local char = player.Character or player.CharacterAdded:Wait()
+      local hrp = char:WaitForChild("HumanoidRootPart")
+      hrp.CFrame = CFrame.new(-443, 3, -772)
+   end,
+})
+
+local AlrightTab = Window:CreateTab("Credits", nil) -- Title, Image
+
+local Paragraph = AlrightTab:CreateParagraph({Title = "Credits", Content = "All credits go to myself nebula no help in this script only some toggles from lualegend but yeah all credits to me @Nebula"})
