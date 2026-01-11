@@ -22,13 +22,13 @@ local Window = Rayfield:CreateWindow({
    },
    KeySystem = true,
    KeySettings = {
-      Title = "Chicblocko Free Key System",
-      Subtitle = "Free Chicblocko",
-      Note = "Your free key is: 2124267",
+      Title = "Chicblocko Premium Key System",
+      Subtitle = "Paid Chicblocko",
+      Note = "Get Your WhiteList Key by opening a ticket !",
       FileName = "Key",
       SaveKey = true,
       GrabKeyFromSite = false,
-      Key = {"2124267"}
+      Key = {"Premium"}
    }
 })
 
@@ -231,6 +231,119 @@ TpTab:CreateButton({
       local char = player.Character or player.CharacterAdded:Wait()
       local hrp = char:WaitForChild("HumanoidRootPart")
       hrp.CFrame = CFrame.new(-443, 3, -772)
+   end,
+})
+
+local PlayerTab = Window:CreateTab("Player🙍", nil) -- Title, Image
+
+local Slider = PlayerTab:CreateSlider({
+   Name = "WalkSpeed",
+   Range = {0, 30},
+   Increment = 1,
+   Suffix = "Speed",
+   CurrentValue = 16,
+   Flag = "Slider1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+      game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+   end,
+})
+
+local Button = PlayerTab:CreateButton({
+   Name = "NoClip Ctrl+k toggle",
+   Callback = function()
+--[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local player = game.Players.LocalPlayer
+local starterGui = game:GetService("StarterGui")
+
+local isActive = false
+local isScriptDisabled = false
+local canToggle = true
+
+starterGui:SetCore("SendNotification", {
+    Title = "Phase",
+    Text = "Controls:\n- Ctrl + K: Toggle\n- Alt + K: Fully Stop",
+    Duration = 5
+})
+
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+local function showNotification(message)
+    starterGui:SetCore("SendNotification", {
+        Title = "Script Status",
+        Text = "Phase " .. message,
+        Duration = 2
+    })
+end
+
+local function toggleNoClip()
+    if not canToggle or isScriptDisabled then return end
+    canToggle = false
+
+    isActive = not isActive
+    showNotification(isActive and "Enabled!" or "Disabled!")
+
+    local character = getCharacter()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+    if isActive then
+        -- Kiểm tra nếu nhân vật chết, dừng script
+        local humanoid = character:WaitForChild("Humanoid")
+        humanoid.Died:Connect(function()
+            isActive = false
+            showNotification("Disabled due to death!")
+        end)
+
+        RunService.Stepped:Connect(function()
+            if isActive and character and humanoidRootPart then
+                for _, part in pairs(character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+
+    task.wait(0.5)
+    canToggle = true
+end
+
+local function disableScript()
+    if isScriptDisabled then return end
+    isScriptDisabled = true
+    isActive = false
+
+    local character = getCharacter()
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = true
+        end
+    end
+
+    starterGui:SetCore("SendNotification", {
+        Title = "Script Stopped",
+        Text = "Phase fully closed successfully!",
+        Duration = 2
+    })
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+
+    if input.KeyCode == Enum.KeyCode.K and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+        toggleNoClip()
+    elseif input.KeyCode == Enum.KeyCode.K and UserInputService:IsKeyDown(Enum.KeyCode.LeftAlt) then
+        disableScript()
+    end
+end)
+
+
    end,
 })
 
